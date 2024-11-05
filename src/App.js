@@ -29,7 +29,7 @@ const App = () => {
     setLastTapTime(now);
 
     // Calculate score based on number of simultaneous taps and combo
-    const basePoints = newTaps.length;
+    const basePoints = newTaps.length -1;
     const pointsToAdd = basePoints;
 
     setTaps(prevTaps => [...prevTaps, ...newTaps]);
