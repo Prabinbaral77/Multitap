@@ -15,7 +15,8 @@ const App = () => {
     if (!isPlaying) return;
 
     const now = Date.now();
-    const touches = Array.from(e.touches);
+    const touches = Array.from(e.touches);  
+    
     const newTaps = touches.map(touch => {
       const rect = e.target.getBoundingClientRect();
       return {
@@ -32,7 +33,6 @@ const App = () => {
     setSimTap(basePoints);
     setTaps(prevTaps => [...prevTaps, ...newTaps]);
     setScore(prevScore => prevScore + basePoints
-
     );
   };
 
