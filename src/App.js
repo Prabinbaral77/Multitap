@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import  "./App.css";
-
+import "./App.css";
 
 const App = () => {
   const [taps, setTaps] = useState([]);
   const [score, setScore] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [timeLeft, setTimeLeft] = useState(30);
-  const [simtap, setSimTap] = useState(0)
+  const [simtap, setSimTap] = useState(0);
+
+  // Track currently active touch IDs to prevent multiple registrations of the same touch
+  const activeTouches = new Set();
 
   // Handle touch events
   const handleTouch = (e) => {
@@ -15,42 +17,37 @@ const App = () => {
     if (!isPlaying) return;
 
     const now = Date.now();
-    const touches = Array.from(e.touches);  
-    
-    const newTaps = touches.map(touch => {
+    const touches = Array.from(e.touches);
+
+    // Filter out touches that are already in activeTouches to avoid duplicate scoring
+    const newTouches = touches.filter((touch) => !activeTouches.has(touch.identifier));
+
+    // Add new touches to the activeTouches set
+    newTouches.forEach((touch) => activeTouches.add(touch.identifier));
+
+    const newTaps = newTouches.map((touch) => {
       const rect = e.target.getBoundingClientRect();
       return {
         id: `${now}-${touch.identifier}`,
         x: touch.clientX - rect.left,
         y: touch.clientY - rect.top,
-        timestamp: now
+        timestamp: now,
       };
     });
 
-
-    // Calculate score based on number of simultaneous taps and combo
     const basePoints = newTaps.length;
     setSimTap(basePoints);
-    setTaps(prevTaps => [...prevTaps, ...newTaps]);
-    setScore(prevScore => prevScore + basePoints
-    );
+
+    // Add new taps and update the score correctly
+    setTaps((prevTaps) => [...prevTaps, ...newTaps]);
+    setScore((prevScore) => prevScore + basePoints);
   };
 
-  // Handle mouse events (for desktop)
-  const handleMouse = (e) => {
-    if (!isPlaying || e.type === 'mouseup') return;
-
-    const now = Date.now();
-    const newTap = {
-      id: now,
-      x: e.nativeEvent.offsetX,
-      y: e.nativeEvent.offsetY,
-      timestamp: now
-    };
-
-    const pointsToAdd = 1; // Cap combo multiplier at 5x
-    setTaps(prevTaps => [...prevTaps, newTap]);
-    setScore(prevScore => prevScore + pointsToAdd);
+  // Handle touch end to remove from activeTouches
+  const handleTouchEnd = (e) => {
+    Array.from(e.changedTouches).forEach((touch) => {
+      activeTouches.delete(touch.identifier); // Remove touch when it's released
+    });
   };
 
   // Start game
@@ -59,6 +56,7 @@ const App = () => {
     setScore(0);
     setTaps([]);
     setTimeLeft(30);
+    activeTouches.clear(); // Reset active touches when the game starts
   };
 
   // Timer effect
@@ -66,7 +64,7 @@ const App = () => {
     let timer;
     if (isPlaying && timeLeft > 0) {
       timer = setInterval(() => {
-        setTimeLeft(prev => prev - 1);
+        setTimeLeft((prev) => prev - 1);
       }, 1000);
     } else if (timeLeft === 0) {
       setIsPlaying(false);
@@ -79,7 +77,7 @@ const App = () => {
   useEffect(() => {
     const cleanup = setInterval(() => {
       const now = Date.now();
-      setTaps(prevTaps => prevTaps.filter(tap => now - tap.timestamp < 1000));
+      setTaps((prevTaps) => prevTaps.filter((tap) => now - tap.timestamp < 1000));
     }, 100);
 
     return () => clearInterval(cleanup);
@@ -94,15 +92,13 @@ const App = () => {
       </div>
 
       {/* Game area */}
-      <div 
+      <div
         className="relative w-full h-96 bg-gray-100 rounded-lg cursor-pointer overflow-hidden touch-none"
         onTouchStart={handleTouch}
-        // onTouchMove={handleTouch}
-        // onMouseDown={handleMouse}
-        // onMouseMove={e => e.buttons === 1 && handleMouse(e)}
+        onTouchEnd={handleTouchEnd}  // Register touch end to clean up touches
       >
         {/* Tap effects */}
-        {taps.map(tap => (
+        {taps.map((tap) => (
           <div
             key={tap.id}
             className="absolute w-8 h-8 -ml-4 -mt-4 bg-blue-500 rounded-full opacity-50 animate-ping"
@@ -132,10 +128,10 @@ const App = () => {
       {/* Instructions */}
       <div className="mt-4 text-gray-600">
         <p>Use multiple fingers to tap anywhere in the game area!</p>
-        <p>Quick taps build up your nocombo multiplier (max 5x)</p>
-        <p>More simultaneous taps = more points({simtap})Yay!</p>
+        <p>More simultaneous taps = more points yo yo ({simtap})!</p>
       </div>
     </div>
   );
 };
+
 export default App;
