@@ -7,7 +7,6 @@ const App = () => {
   const [score, setScore] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [timeLeft, setTimeLeft] = useState(30);
-  const [lastTapTime, setLastTapTime] = useState(0);
   const [simtap, setSimTap] = useState(0)
 
   // Handle touch events
@@ -27,14 +26,14 @@ const App = () => {
       };
     });
 
-    setLastTapTime(now);
 
     // Calculate score based on number of simultaneous taps and combo
     const basePoints = newTaps.length;
-    const pointsToAdd = basePoints;
     setSimTap(basePoints);
     setTaps(prevTaps => [...prevTaps, ...newTaps]);
-    setScore(prevScore => prevScore + pointsToAdd);
+    setScore(prevScore => prevScore + basePoints
+
+    );
   };
 
   // Handle mouse events (for desktop)
@@ -49,8 +48,6 @@ const App = () => {
       timestamp: now
     };
 
-    setLastTapTime(now);
-
     const pointsToAdd = 1; // Cap combo multiplier at 5x
     setTaps(prevTaps => [...prevTaps, newTap]);
     setScore(prevScore => prevScore + pointsToAdd);
@@ -62,7 +59,6 @@ const App = () => {
     setScore(0);
     setTaps([]);
     setTimeLeft(30);
-    setLastTapTime(0);
   };
 
   // Timer effect
@@ -137,7 +133,7 @@ const App = () => {
       <div className="mt-4 text-gray-600">
         <p>Use multiple fingers to tap anywhere in the game area!</p>
         <p>Quick taps build up your nocombo multiplier (max 5x)</p>
-        <p>More simultaneous taps = more points({simtap})!</p>
+        <p>More simultaneous taps = more points({simtap})Yay!</p>
       </div>
     </div>
   );
