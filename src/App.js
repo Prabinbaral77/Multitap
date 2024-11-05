@@ -7,7 +7,6 @@ const App = () => {
   const [score, setScore] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [timeLeft, setTimeLeft] = useState(30);
-  const [combo, setCombo] = useState(0);
   const [lastTapTime, setLastTapTime] = useState(0);
 
   // Handle touch events
@@ -27,18 +26,11 @@ const App = () => {
       };
     });
 
-    // Update combo system
-    if (now - lastTapTime < 500) { // 500ms window for combo
-      setCombo(prev => prev + 1);
-    } else {
-      setCombo(1);
-    }
     setLastTapTime(now);
 
     // Calculate score based on number of simultaneous taps and combo
     const basePoints = newTaps.length;
-    const comboMultiplier = Math.min(combo, 5); // Cap combo multiplier at 5x
-    const pointsToAdd = basePoints * comboMultiplier;
+    const pointsToAdd = basePoints;
 
     setTaps(prevTaps => [...prevTaps, ...newTaps]);
     setScore(prevScore => prevScore + pointsToAdd);
@@ -56,15 +48,9 @@ const App = () => {
       timestamp: now
     };
 
-    // Update combo system
-    if (now - lastTapTime < 500) {
-      setCombo(prev => prev + 1);
-    } else {
-      setCombo(1);
-    }
     setLastTapTime(now);
 
-    const pointsToAdd = Math.min(combo, 5); // Cap combo multiplier at 5x
+    const pointsToAdd = 1; // Cap combo multiplier at 5x
     setTaps(prevTaps => [...prevTaps, newTap]);
     setScore(prevScore => prevScore + pointsToAdd);
   };
@@ -75,7 +61,6 @@ const App = () => {
     setScore(0);
     setTaps([]);
     setTimeLeft(30);
-    setCombo(0);
     setLastTapTime(0);
   };
 
@@ -109,17 +94,14 @@ const App = () => {
       <div className="flex justify-between mb-4">
         <div className="text-2xl font-bold">Score: {score}</div>
         <div className="text-2xl font-bold">Time: {timeLeft}s</div>
-        <div className="text-2xl font-bold text-blue-500">
-          Combo: {combo}x
-        </div>
       </div>
 
       {/* Game area */}
       <div 
         className="relative w-full h-96 bg-gray-100 rounded-lg cursor-pointer overflow-hidden touch-none"
         onTouchStart={handleTouch}
-        onTouchMove={handleTouch}
-        onMouseDown={handleMouse}
+        // onTouchMove={handleTouch}
+        // onMouseDown={handleMouse}
         onMouseMove={e => e.buttons === 1 && handleMouse(e)}
       >
         {/* Tap effects */}
@@ -153,7 +135,7 @@ const App = () => {
       {/* Instructions */}
       <div className="mt-4 text-gray-600">
         <p>Use multiple fingers to tap anywhere in the game area!</p>
-        <p>Quick taps build up your combo multiplier (max 5x)</p>
+        <p>Quick taps build up your nocombo multiplier (max 5x)</p>
         <p>More simultaneous taps = more points!</p>
       </div>
     </div>
