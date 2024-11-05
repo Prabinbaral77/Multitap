@@ -6,47 +6,51 @@ const App = () => {
   const [score, setScore] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [timeLeft, setTimeLeft] = useState(30);
-  const [simtap, setSimTap] = useState(0);
+  const [simTap, setSimTap] = useState(0);
 
-  // Track currently active touch IDs to prevent multiple registrations of the same touch
-  const activeTouches = new Set();
+  // Track unique touch identifiers
+  const [activeTouches, setActiveTouches] = useState(new Set());
 
   // Handle touch events
-  const handleTouch = (e) => {
+  const handleTouchStart = (e) => {
     e.preventDefault(); // Prevent default touch behaviors
     if (!isPlaying) return;
 
     const now = Date.now();
-    const touches = Array.from(e.touches);
+    const rect = e.target.getBoundingClientRect();
+    const newTouches = Array.from(e.changedTouches).filter(touch => !activeTouches.has(touch.identifier));
 
-    // Filter out touches that are already in activeTouches to avoid duplicate scoring
-    const newTouches = touches.filter((touch) => !activeTouches.has(touch.identifier));
-
-    // Add new touches to the activeTouches set
-    newTouches.forEach((touch) => activeTouches.add(touch.identifier));
-
-    const newTaps = newTouches.map((touch) => {
-      const rect = e.target.getBoundingClientRect();
-      return {
-        id: `${now}-${touch.identifier}`,
-        x: touch.clientX - rect.left,
-        y: touch.clientY - rect.top,
-        timestamp: now,
-      };
+    // Update active touches set
+    setActiveTouches(prevTouches => {
+      const updatedTouches = new Set(prevTouches);
+      newTouches.forEach(touch => updatedTouches.add(touch.identifier));
+      return updatedTouches;
     });
 
-    const basePoints = newTaps.length;
+    // Create tap points for each new touch
+    const newTaps = newTouches.map(touch => ({
+      id: `${now}-${touch.identifier}`,
+      x: touch.clientX - rect.left,
+      y: touch.clientY - rect.top,
+      timestamp: now,
+    }));
+
+    const basePoints = newTouches.length;
     setSimTap(basePoints);
 
-    // Add new taps and update the score correctly
-    setTaps((prevTaps) => [...prevTaps, ...newTaps]);
-    setScore((prevScore) => prevScore + basePoints);
+    // Add taps and increase score based on the number of unique touches
+    setTaps(prevTaps => [...prevTaps, ...newTaps]);
+    setScore(prevScore => prevScore + basePoints);
   };
 
-  // Handle touch end to remove from activeTouches
+  // Handle touch end and remove touch from activeTouches
   const handleTouchEnd = (e) => {
-    Array.from(e.changedTouches).forEach((touch) => {
-      activeTouches.delete(touch.identifier); // Remove touch when it's released
+    const endedTouches = Array.from(e.changedTouches);
+
+    setActiveTouches(prevTouches => {
+      const updatedTouches = new Set(prevTouches);
+      endedTouches.forEach(touch => updatedTouches.delete(touch.identifier));
+      return updatedTouches;
     });
   };
 
@@ -56,7 +60,7 @@ const App = () => {
     setScore(0);
     setTaps([]);
     setTimeLeft(30);
-    activeTouches.clear(); // Reset active touches when the game starts
+    setActiveTouches(new Set()); // Reset active touches when the game starts
   };
 
   // Timer effect
@@ -64,7 +68,7 @@ const App = () => {
     let timer;
     if (isPlaying && timeLeft > 0) {
       timer = setInterval(() => {
-        setTimeLeft((prev) => prev - 1);
+        setTimeLeft(prev => prev - 1);
       }, 1000);
     } else if (timeLeft === 0) {
       setIsPlaying(false);
@@ -77,7 +81,7 @@ const App = () => {
   useEffect(() => {
     const cleanup = setInterval(() => {
       const now = Date.now();
-      setTaps((prevTaps) => prevTaps.filter((tap) => now - tap.timestamp < 1000));
+      setTaps(prevTaps => prevTaps.filter(tap => now - tap.timestamp < 1000));
     }, 100);
 
     return () => clearInterval(cleanup);
@@ -94,8 +98,9 @@ const App = () => {
       {/* Game area */}
       <div
         className="relative w-full h-96 bg-gray-100 rounded-lg cursor-pointer overflow-hidden touch-none"
-        onTouchStart={handleTouch}
+        onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}  // Register touch end to clean up touches
+        onTouchCancel={handleTouchEnd} // Handle touch cancel events as well
       >
         {/* Tap effects */}
         {taps.map((tap) => (
@@ -128,7 +133,7 @@ const App = () => {
       {/* Instructions */}
       <div className="mt-4 text-gray-600">
         <p>Use multiple fingers to tap anywhere in the game area!</p>
-        <p>More simultaneous taps = more points yo yo ({simtap})!</p>
+        <p>More simultaneous taps = more points ({simTap})!</p>
       </div>
     </div>
   );
