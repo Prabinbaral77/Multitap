@@ -7,20 +7,66 @@ const App = () => {
   const [score, setScore] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [timeLeft, setTimeLeft] = useState(30);
+  const [combo, setCombo] = useState(0);
+  const [lastTapTime, setLastTapTime] = useState(0);
 
-  // Handle screen tap/click
-  const handleTap = (e) => {
+  // Handle touch events
+  const handleTouch = (e) => {
+    e.preventDefault(); // Prevent default touch behaviors
     if (!isPlaying) return;
 
+    const now = Date.now();
+    const touches = Array.from(e.touches);
+    const newTaps = touches.map(touch => {
+      const rect = e.target.getBoundingClientRect();
+      return {
+        id: `${now}-${touch.identifier}`,
+        x: touch.clientX - rect.left,
+        y: touch.clientY - rect.top,
+        timestamp: now
+      };
+    });
+
+    // Update combo system
+    if (now - lastTapTime < 500) { // 500ms window for combo
+      setCombo(prev => prev + 1);
+    } else {
+      setCombo(1);
+    }
+    setLastTapTime(now);
+
+    // Calculate score based on number of simultaneous taps and combo
+    const basePoints = newTaps.length;
+    const comboMultiplier = Math.min(combo, 5); // Cap combo multiplier at 5x
+    const pointsToAdd = basePoints * comboMultiplier;
+
+    setTaps(prevTaps => [...prevTaps, ...newTaps]);
+    setScore(prevScore => prevScore + pointsToAdd);
+  };
+
+  // Handle mouse events (for desktop)
+  const handleMouse = (e) => {
+    if (!isPlaying || e.type === 'mouseup') return;
+
+    const now = Date.now();
     const newTap = {
-      id: Date.now(),
+      id: now,
       x: e.nativeEvent.offsetX,
       y: e.nativeEvent.offsetY,
-      timestamp: Date.now()
+      timestamp: now
     };
 
+    // Update combo system
+    if (now - lastTapTime < 500) {
+      setCombo(prev => prev + 1);
+    } else {
+      setCombo(1);
+    }
+    setLastTapTime(now);
+
+    const pointsToAdd = Math.min(combo, 5); // Cap combo multiplier at 5x
     setTaps(prevTaps => [...prevTaps, newTap]);
-    setScore(prevScore => prevScore + 1);
+    setScore(prevScore => prevScore + pointsToAdd);
   };
 
   // Start game
@@ -29,6 +75,8 @@ const App = () => {
     setScore(0);
     setTaps([]);
     setTimeLeft(30);
+    setCombo(0);
+    setLastTapTime(0);
   };
 
   // Timer effect
@@ -61,12 +109,18 @@ const App = () => {
       <div className="flex justify-between mb-4">
         <div className="text-2xl font-bold">Score: {score}</div>
         <div className="text-2xl font-bold">Time: {timeLeft}s</div>
+        <div className="text-2xl font-bold text-blue-500">
+          Combo: {combo}x
+        </div>
       </div>
 
       {/* Game area */}
       <div 
-        className="relative w-full h-96 bg-gray-100 rounded-lg cursor-pointer overflow-hidden"
-        onClick={handleTap}
+        className="relative w-full h-96 bg-gray-100 rounded-lg cursor-pointer overflow-hidden touch-none"
+        onTouchStart={handleTouch}
+        onTouchMove={handleTouch}
+        onMouseDown={handleMouse}
+        onMouseMove={e => e.buttons === 1 && handleMouse(e)}
       >
         {/* Tap effects */}
         {taps.map(tap => (
@@ -82,7 +136,10 @@ const App = () => {
 
         {/* Game state overlay */}
         {!isPlaying && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black bg-opacity-50">
+            <div className="text-white text-xl mb-4">
+              Final Score: {score}
+            </div>
             <button
               onClick={startGame}
               className="px-6 py-3 text-xl font-bold text-white bg-blue-500 rounded-lg hover:bg-blue-600 transition-colors"
@@ -95,10 +152,11 @@ const App = () => {
 
       {/* Instructions */}
       <div className="mt-4 text-gray-600">
-        Tap anywhere in the game area to score points! You have 30 seconds.
+        <p>Use multiple fingers to tap anywhere in the game area!</p>
+        <p>Quick taps build up your combo multiplier (max 5x)</p>
+        <p>More simultaneous taps = more points!</p>
       </div>
     </div>
   );
 };
-
 export default App;
