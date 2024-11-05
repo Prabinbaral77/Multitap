@@ -102,7 +102,7 @@ const App = () => {
         onTouchStart={handleTouch}
         // onTouchMove={handleTouch}
         // onMouseDown={handleMouse}
-        onMouseMove={e => e.buttons === 1 && handleMouse(e)}
+        // onMouseMove={e => e.buttons === 1 && handleMouse(e)}
       >
         {/* Tap effects */}
         {taps.map(tap => (
